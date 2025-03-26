@@ -14,17 +14,30 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsup",
     "start": "node dist/index.js",
     "test": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "npm run build"
   },
-  "keywords": [],
-  "author": "musicq",
+  "keywords": [
+    "text-align",
+    "text-formatter",
+    "string-alignment",
+    "chinese-text",
+    "english-text",
+    "text-spacing",
+    "text-utils"
+  ],
+  "author": {
+    "name": "musicq",
+    "email": "kui.liang.sg@gmail.com"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
