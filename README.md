@@ -22,18 +22,35 @@ npm install text-aligner
 
 ## Usage
 
-```typescript
+```ts
 import {alignText} from 'text-aligner'
 
 const strings = ['Hello 你好', 'Hi 早上好', 'Good morning 晚安']
 
 const aligned = alignText(strings)
 console.log(aligned)
+// [
+//   'Hello 你好\u2007\u2007\u2007\u2007\u2007\u2007\u2007\u2001',
+//   'Hi 早上好\u2007\u2007\u2007\u2007\u2007\u2007\u2007\u2007\u2007\u2007',
+//   'Good morning 晚安\u2001',
+// ]
 ```
 
 ## API
 
-### `alignText(strings: string[], paddingMap?: Record<'en' | 'cjk', string>): string[]`
+### alignText
+
+```ts
+function alignText(
+  strings: string[],
+  paddingMap?: Record<string, PaddingRule | string>
+): string[]
+
+type PaddingRule = {
+  test: RegExp | ((char: string) => boolean) | typeof FallbackKey
+  placeholder: string
+}
+```
 
 Aligns an array of strings by adding padding spaces to make all strings visually
 aligned.
@@ -41,10 +58,10 @@ aligned.
 #### Parameters
 
 - `strings`: Array of strings to be aligned
-- `paddingMap` (optional): Custom padding characters for English and CJK text
+- `paddingMap` (optional): Custom padding characters
   - Default values:
-    - English: `\u2007` (Figure Space)
     - CJK: `\u2001` (Em Quad)
+    - Fallback: `\u2007` (Figure Space)
 
 #### Returns
 
