@@ -1,6 +1,20 @@
-const DefaultPaddingMap = {
-  en: '\u2007',
-  cjk: '\u2001',
+const FallbackKey = '@@fallback' as const
+const FallbackPlaceholder = '\u2007'
+
+type PaddingRule = {
+  test: RegExp | ((char: string) => boolean) | typeof FallbackKey
+  placeholder: string
+}
+
+const DefaultPaddingMap: Record<string, PaddingRule> = {
+  cjk: {
+    test: (char: string) => isCJK(char),
+    placeholder: '\u2001',
+  },
+  [FallbackKey]: {
+    test: FallbackKey,
+    placeholder: FallbackPlaceholder,
+  },
 }
 
 function isCJK(char: string) {
@@ -31,49 +45,100 @@ function isCJK(char: string) {
   return cjkRanges.some(([start, end]) => charCode >= start && charCode <= end)
 }
 
-function countChars(str: string): [number, number] {
-  let enCount = 0
-  let cjkCount = 0
+function countChars(
+  str: string,
+  rules: Record<string, PaddingRule>
+): Record<string, number> {
+  const counts: Record<string, number> = {
+    [FallbackKey]: 0,
+  }
+
+  Object.keys(rules).forEach(key => (counts[key] = 0))
 
   for (const char of str) {
-    if (isCJK(char)) cjkCount++
-    else enCount++
+    let matched = false
+    for (const [key, rule] of Object.entries(rules)) {
+      if (key === FallbackKey || rule.test === FallbackKey) {
+        continue
+      }
+
+      if (
+        typeof rule.test === 'function' ? rule.test(char) : rule.test.test(char)
+      ) {
+        counts[key]++
+        matched = true
+        break
+      }
+    }
+
+    if (!matched) {
+      counts[FallbackKey]++
+    }
   }
 
-  return [enCount, cjkCount]
+  return counts
 }
 
-function findMaxCounts(counts: [number, number][]): [number, number] {
-  let maxEn = 0
-  let maxCjk = 0
+function findMaxCounts(
+  counts: Record<string, number>[]
+): Record<string, number> {
+  const maxCounts: Record<string, number> = {}
 
-  for (const [en, cjk] of counts) {
-    maxEn = Math.max(maxEn, en)
-    maxCjk = Math.max(maxCjk, cjk)
+  for (const count of counts) {
+    Object.keys(count).forEach(key => {
+      maxCounts[key] = Math.max(maxCounts[key] || 0, count[key])
+    })
   }
 
-  return [maxEn, maxCjk]
+  return maxCounts
 }
 
 /**
  * Aligns an array of strings by adding spaces to each string so that all strings have the same number of English and Chinese characters.
  *
  * @param {string[]} strings - An array of strings to be aligned.
- * @param {Record<string, string>} paddingMap - A map of padding characters for English and Chinese characters.
+ * @param {Record<string, PaddingRule | string>} paddingMap - A map of padding rules for different character types.
  * @returns {string[]} - An array of aligned strings with added spaces.
  */
 export function alignText(
   strings: string[],
-  paddingMap: Record<'en' | 'cjk', string> = DefaultPaddingMap
+  paddingMap: Record<string, PaddingRule | string> = DefaultPaddingMap
 ): string[] {
-  const counts = strings.map(str => countChars(str))
-  const [maxEn, maxCjk] = findMaxCounts(counts)
+  const normalizedPaddingMap: Record<string, PaddingRule> = {}
+
+  for (const [key, value] of Object.entries(paddingMap)) {
+    if (typeof value === 'string') {
+      if (!DefaultPaddingMap[key]) {
+        continue
+      }
+
+      normalizedPaddingMap[key] = {
+        test: DefaultPaddingMap[key]?.test,
+        placeholder: value,
+      }
+      continue
+    }
+
+    normalizedPaddingMap[key] = value
+  }
+
+  normalizedPaddingMap[FallbackKey] ??= {
+    test: FallbackKey,
+    placeholder: FallbackPlaceholder,
+  }
+
+  const counts = strings.map(str => countChars(str, normalizedPaddingMap))
+  const maxCounts = findMaxCounts(counts)
 
   return strings.map((str, index) => {
-    const [enCount, cjkCount] = counts[index]
-    const enDiff = maxEn - enCount
-    const cjkDiff = maxCjk - cjkCount
+    const currentCounts = counts[index]
+    let result = str
 
-    return str + paddingMap.en.repeat(enDiff) + paddingMap.cjk.repeat(cjkDiff)
+    for (const [key, count] of Object.entries(maxCounts)) {
+      const diff = count - currentCounts[key]
+      result += normalizedPaddingMap[key].placeholder.repeat(diff)
+    }
+
+    return result
   })
 }

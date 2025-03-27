@@ -69,4 +69,45 @@ describe('alignText', () => {
     ]
     expect(alignText(input)).toEqual(expected)
   })
+
+  it('should handle custom paddingMap', () => {
+    const input = ['Hello 世界', 'Hi', 'Hello World 世']
+    const customPaddingMap = {
+      en: {
+        test: /^[a-zA-Z0-9]$/,
+        placeholder: '\u0020',
+      },
+      cjk: {
+        test: (char: string) => /\p{Script=Han}/u.test(char),
+        placeholder: '\u3000',
+      },
+    }
+
+    const expected = [
+      'Hello 世界' + '\u2007' + '\u0020'.repeat(5),
+      'Hi' + '\u2007'.repeat(2) + '\u0020'.repeat(8) + '\u3000'.repeat(2),
+      'Hello World 世' + '\u3000',
+    ]
+
+    expect(alignText(input, customPaddingMap)).toEqual(expected)
+  })
+
+  it('should handle partial custom paddingMap', () => {
+    const input = ['Hello 世界', 'Hi', 'Hello World 世']
+    const customPaddingMap = {
+      '@@fallback': '\u2002',
+      cjk: {
+        test: (char: string) => /\p{Script=Han}/u.test(char),
+        placeholder: '\u3000',
+      },
+    }
+
+    const expected = [
+      'Hello 世界' + '\u2002'.repeat(6),
+      'Hi' + '\u2002'.repeat(10) + '\u3000'.repeat(2),
+      'Hello World 世' + '\u3000',
+    ]
+
+    expect(alignText(input, customPaddingMap)).toEqual(expected)
+  })
 })
