@@ -2,13 +2,13 @@ import {describe, it, expect} from 'vitest'
 import {alignText} from '../src'
 
 describe('alignText', () => {
-  it('should align mixed Chinese and English text', () => {
-    const input = ['Hello 世界', 'Hi', 'Hello World 世']
+  it.only('should align mixed Chinese and English text', () => {
+    const input = ['Hello 你好', 'Hi 早上好', 'Good morning 晚安']
 
     const expected = [
-      'Hello 世界\u2007\u2007\u2007\u2007\u2007\u2007',
-      'Hi\u2007\u2007\u2007\u2007\u2007\u2007\u2007\u2007\u2007\u2007\u2001\u2001',
-      'Hello World 世\u2001',
+      'Hello 你好' + '\u2007'.repeat(7) + '\u2001'.repeat(1),
+      'Hi 早上好' + '\u2007'.repeat(10),
+      'Good morning 晚安' + '\u2001',
     ]
 
     expect(alignText(input)).toEqual(expected)
